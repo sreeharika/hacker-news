@@ -5,7 +5,7 @@ var cors = require('cors')
 const app = express()
 const port = 3000
 
-
+//cross origin resoure sharing(cors) is middleware
 app.use(cors())
 
 // connect to database
@@ -15,36 +15,33 @@ mongoose.connect(`${DATABSE_HOST}/${DATABASE_NAME}`, { useNewUrlParser: true, us
 
 // create application/x-www-form-urlencoded parser
 var urlencodedParser = bodyParser.urlencoded({ extended: false })
+var jsonparser = bodyParser.json()
 
+app.use(jsonparser);
 // home route
 app.get('/', (req, res) => {
     res.send('Hello world')
 })
 
-// test route
-app.get('/test', (req, res) => {
-    const Cat = mongoose.model('Cat', { name: String });
-
-    const kitty = new Cat({ name: 'Zildjian' });
-    kitty.save().then(() => {
-        console.log('meow')
-        res.send('new cat added')
-    });
-})
-
+//db model for post and user and schema 
 const Post = mongoose.model('Post', { title: String, url: String, username: String, datemodified: Date });
 
 const User = mongoose.model('User', { username: String, password: String });
-
+const Upvote = mongoose.model('Upvote', {username: String, counter: Number });
 // /login --POST -- payload will be username and password
 
 // users
 // /user  -- POST -- payload will be username and password(create user)
-app.post('/user', urlencodedParser, (req, res) => {
+app.post('/user', (req, res) => {
+    console.log(req.body);
     const user = new User({ username: req.body.username, password: req.body.password });
     user.save().then(() => {
         console.log('new  user added')
         res.status(200).send('new user added successfully')
+    })
+    .catch(err => {
+        console.log(error);
+        res.status(500).send("something broke!")
     });
 })
 
@@ -54,9 +51,9 @@ app.post('/user', urlencodedParser, (req, res) => {
 // /article -- POST -- payload will be title and url --- (create post)
 app.post('/post', urlencodedParser, (req, res) => {
 
-    console.log(req.body.title);
-    console.log(req.body.url);
-    console.log(req.body.username);
+    // console.log(req.body.title);
+    // console.log(req.body.url);
+    // console.log(req.body.username);
 
     const post = new Post({
         title: req.body.title,
@@ -97,7 +94,26 @@ app.get('/posts', (req, res) => {
     })
 })
 
+app.post('/upvote',(req,res)=>{
+    const Upvote = new Upvote({username: req.body.username, count: req.body.counter});           
+    const counter = action === 'upvote' ? 1 : -1;
+        Post.update({_id: req.params.id}, {$inc: {likes_count: counter}}, {}, (err, numberAffected) => {
+            res.send('');
+        });
+    // post.find({}).then(upvoteFromDB);
+    // res.status(200).send(upvoteFromDB);
+});
 
+app.get('/userlist', (req,res)=>{
+    User
+      .find({})
+      .then(data => {
+          res.status(200).json(data);
+      })
+      .catch(err =>{
+          res.status(500).send("went wrong")
+      })
+})
 
 // /comment --- POST --- payload will be comment text, user id, timestamp
 
